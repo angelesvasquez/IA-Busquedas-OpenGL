@@ -103,98 +103,112 @@ void drawGrid() {
 void clearPathOnly() {
     for (int i = 0; i < GRID_SIZE; ++i) {
         for (int j = 0; j < GRID_SIZE; ++j) {
-            grid[i][j].isPath = false;      // limpia el camino final
             grid[i][j].isExplored = false;  // limpia los nodos explorados
+            grid[i][j].isPath = false;      // limpia el camino final
         }
     }
 }
 
 
 //Búsqueda por amplitud 
-void bfsPath() { 
-    vector<vector<bool>> visited(GRID_SIZE, vector<bool>(GRID_SIZE, false)); 
-    vector<vector<pair<int, int>>> parent(GRID_SIZE, vector<pair<int, int>>(GRID_SIZE, make_pair(-1, -1))); 
-    queue<pair<int, int>> q; q.push(startNode); 
-    visited[startNode.first][startNode.second] = true; 
-    bool found = false; 
-    while (!q.empty() && !found) { 
-        pair<int, int> current = q.front(); 
-        q.pop(); int x = current.first; 
-        int y = current.second; 
-        for (int d = 0; d < 8; d++) { 
-            int nx = x + dx[d]; 
-            int ny = y + dy[d]; 
-            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[nx][ny] && grid[nx][ny].isActive) { 
-                visited[nx][ny] = true; 
+void bfsPath() {
+    vector<vector<bool>> visited(GRID_SIZE, vector<bool>(GRID_SIZE, false));
+    vector<vector<pair<int, int>>> parent(GRID_SIZE, vector<pair<int, int>>(GRID_SIZE, make_pair(-1, -1)));
+    queue<pair<int, int>> q; q.push(startNode);
+    visited[startNode.first][startNode.second] = true;
+    bool found = false;
+    int exploredCount = 0;
+    while (!q.empty() && !found) {
+        pair<int, int> current = q.front();
+        q.pop(); int x = current.first;
+        int y = current.second;
+        for (int d = 0; d < 8; d++) {
+            int nx = x + dx[d];
+            int ny = y + dy[d];
+            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[nx][ny] && grid[nx][ny].isActive) {
+                visited[nx][ny] = true;
                 grid[nx][ny].isExplored = true;
-                parent[nx][ny] = make_pair(x, y); 
-                q.push(make_pair(nx, ny)); 
-                if (nx == endNode.first && ny == endNode.second) { 
-                    found = true; 
-                    break; 
-                } 
-            } 
-        } 
-    } if (found) { 
-        int cx = endNode.first; 
-        int cy = endNode.second; 
-        while (!(cx == startNode.first && cy == startNode.second)) { 
-            if (!(cx == endNode.first && cy == endNode.second) && !(cx == startNode.first && cy == startNode.second)) { 
-                grid[cx][cy].isPath = true; 
-            } 
-            pair<int, int> p = parent[cx][cy]; 
-            cx = p.first; cy = p.second; 
-        } 
-        cout << "Camino encontrado con BFS y marcado en amarillo.\n"; 
-    } else { 
-        cout << "No se encontro camino con BFS.\n"; 
-    } 
-} 
+                exploredCount++;
+                parent[nx][ny] = make_pair(x, y);
+                q.push(make_pair(nx, ny));
+                if (nx == endNode.first && ny == endNode.second) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+    } if (found) {
+        int cx = endNode.first;
+        int cy = endNode.second;
+        int pathLength = 0;
+        while (!(cx == startNode.first && cy == startNode.second)) {
+            if (!(cx == endNode.first && cy == endNode.second) && !(cx == startNode.first && cy == startNode.second)) {
+                grid[cx][cy].isPath = true;
+                pathLength ++;
+            }
+            pair<int, int> p = parent[cx][cy];
+            cx = p.first; cy = p.second;
+        }
+        cout << "Camino encontrado con BFS y marcado en amarillo.\n";
+        cout << "[En amplitud] Longitud del camino: " << pathLength << "\n";
+        cout << "[En amplitud] Nodos explorados: " << exploredCount << "\n";
+    }
+    else {
+        cout << "No se encontro camino con BFS.\n";
+    }
+}
 //Búsqueda por profundidad 
-void dfsPath() { 
-    vector<vector<bool>> visited(GRID_SIZE, vector<bool>(GRID_SIZE, false)); 
-    vector<vector<pair<int, int>>> parent(GRID_SIZE, vector<pair<int, int>>(GRID_SIZE, make_pair(-1, -1))); 
-    stack<pair<int, int>> st; 
-    st.push(startNode); 
-    visited[startNode.first][startNode.second] = true; 
-    bool found = false; 
-    while (!st.empty() && !found) { 
-        pair<int, int> current = st.top(); 
-        st.pop(); 
-        int x = current.first; 
-        int y = current.second; 
-        for (int d = 0; d < 8; d++) { 
-            int nx = x + dx[d]; 
-            int ny = y + dy[d]; 
-            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[nx][ny] && grid[nx][ny].isActive) { 
-                visited[nx][ny] = true; 
+void dfsPath() {
+    vector<vector<bool>> visited(GRID_SIZE, vector<bool>(GRID_SIZE, false));
+    vector<vector<pair<int, int>>> parent(GRID_SIZE, vector<pair<int, int>>(GRID_SIZE, make_pair(-1, -1)));
+    stack<pair<int, int>> st;
+    st.push(startNode);
+    visited[startNode.first][startNode.second] = true;
+    bool found = false;
+    int exploredCount = 0;
+    while (!st.empty() && !found) {
+        pair<int, int> current = st.top();
+        st.pop();
+        int x = current.first;
+        int y = current.second;
+        for (int d = 0; d < 8; d++) {
+            int nx = x + dx[d];
+            int ny = y + dy[d];
+            if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[nx][ny] && grid[nx][ny].isActive) {
+                visited[nx][ny] = true;
                 grid[nx][ny].isExplored = true;
-                parent[nx][ny] = make_pair(x, y); 
-                st.push(make_pair(nx, ny)); 
-                if (nx == endNode.first && ny == endNode.second) { 
-                    found = true; break; 
-                } 
-            } 
-        } 
-    } if (found) { 
-        int cx = endNode.first; 
-        int cy = endNode.second; 
-        while (!(cx == startNode.first && cy == startNode.second)) { 
-            if (!(cx == endNode.first && cy == endNode.second) && !(cx == startNode.first && cy == startNode.second)) { 
-                grid[cx][cy].isPath = true; 
-            } 
-            pair<int, int> p = parent[cx][cy]; 
-            cx = p.first; cy = p.second; 
-        } 
-        cout << "Camino encontrado con DFS y marcado en amarillo.\n"; 
-    } else { 
-        cout << "No se encontro camino con DFS.\n"; 
-    } 
-} 
-double euclidean(int x, int y) { 
-    int dx = x - endNode.first; 
-    int dy = y - endNode.second; 
-    return sqrt(dx * dx + dy * dy); 
+                exploredCount++;
+                parent[nx][ny] = make_pair(x, y);
+                st.push(make_pair(nx, ny));
+                if (nx == endNode.first && ny == endNode.second) {
+                    found = true; break;
+                }
+            }
+        }
+    } if (found) {
+        int cx = endNode.first;
+        int cy = endNode.second;
+        int pathLength = 0;
+        while (!(cx == startNode.first && cy == startNode.second)) {
+            if (!(cx == endNode.first && cy == endNode.second) && !(cx == startNode.first && cy == startNode.second)) {
+                grid[cx][cy].isPath = true;
+                pathLength++;
+            }
+            pair<int, int> p = parent[cx][cy];
+            cx = p.first; cy = p.second;
+        }
+        cout << "Camino encontrado con DFS y marcado en amarillo.\n";
+        cout << "[En profundidad] Longitud del camino: " << pathLength << "\n";
+        cout << "[En profundidad] Nodos explorados: " << exploredCount << "\n";
+    }
+    else {
+        cout << "No se encontro camino con DFS.\n";
+    }
+}
+double euclidean(int x, int y) {
+    int dx = x - endNode.first;
+    int dy = y - endNode.second;
+    return sqrt(dx * dx + dy * dy);
 }
 //Búsqueda por A*
 void aStarPath() {
@@ -206,6 +220,7 @@ void aStarPath() {
 
     int sx = startNode.first, sy = startNode.second;
     int gx = endNode.first, gy = endNode.second;
+    int exploredCount = 0;
 
     gCost[sx][sy] = 0;
     pq.push({ sx, sy, euclidean(sx, sy), 0, euclidean(sx, sy) });
@@ -219,6 +234,7 @@ void aStarPath() {
         if (visited[cur.x][cur.y]) continue;
         visited[cur.x][cur.y] = true;
         grid[cur.x][cur.y].isExplored = true;
+        exploredCount++;
 
         if (cur.x == gx && cur.y == gy) {
             found = true;
@@ -245,15 +261,19 @@ void aStarPath() {
 
     if (found) {
         int cx = gx, cy = gy;
+        int pathLength = 0;
         while (!(cx == sx && cy == sy)) {
             if (!(cx == gx && cy == gy) && !(cx == sx && cy == sy)) {
                 grid[cx][cy].isPath = true;
+                pathLength++;
             }
             pair<int, int> p = parent[cx][cy];
             cx = p.first;
             cy = p.second;
         }
         cout << "Camino encontrado con A* y marcado en amarillo.\n";
+        cout << "[A*] Longitud del camino: " << pathLength << "\n";
+        cout << "[A*] Nodos explorados: " << exploredCount << "\n";
     }
     else {
         cout << "No se encontro camino con A*.\n";
@@ -262,11 +282,8 @@ void aStarPath() {
 
 bool hillClimbingDFSUtil(int x, int y, int gx, int gy,
     vector<vector<bool>>& visited,
-    vector<vector<pair<int, int>>>& parent) {
+    vector<vector<pair<int, int>>>& parent, int& exploredCount) {
     if (x == gx && y == gy) return true;
-
-    visited[x][y] = true;
-    grid[x][y].isExplored = true;
 
     // generar vecinos
     vector<pair<double, pair<int, int>>> neighbors;
@@ -286,8 +303,15 @@ bool hillClimbingDFSUtil(int x, int y, int gx, int gy,
     // explorar en orden
     for (auto& nb : neighbors) {
         int nx = nb.second.first, ny = nb.second.second;
-        parent[nx][ny] = { x, y };
-        if (hillClimbingDFSUtil(nx, ny, gx, gy, visited, parent)) return true;
+        if (!visited[nx][ny]) {
+            visited[nx][ny] = true;
+            grid[nx][ny].isExplored = true;
+            exploredCount++;
+
+            parent[nx][ny] = { x, y };
+            if (hillClimbingDFSUtil(nx, ny, gx, gy, visited, parent, exploredCount))
+                return true;
+        }
     }
 
     return false; // sin salida, retrocede
@@ -301,18 +325,23 @@ void hillClimbingPath() {
 
     int sx = startNode.first, sy = startNode.second;
     int gx = endNode.first, gy = endNode.second;
+    int exploredCount = 0;
 
-    bool found = hillClimbingDFSUtil(sx, sy, gx, gy, visited, parent);
+    bool found = hillClimbingDFSUtil(sx, sy, gx, gy, visited, parent, exploredCount);
 
     if (found) {
         int cx = gx, cy = gy;
+        int pathLength = 0;
         while (!(cx == sx && cy == sy)) {
             if (!(cx == gx && cy == gy) && !(cx == sx && cy == sy))
                 grid[cx][cy].isPath = true;
+                pathLength++;
             pair<int, int> p = parent[cx][cy];
             cx = p.first; cy = p.second;
         }
         cout << "[HillClimbing] Camino encontrado con backtracking.\n";
+        cout << "[HillClimbing] Longitud del camino: " << pathLength << "\n";
+        cout << "[HillClimbing] Nodos explorados: " << exploredCount << "\n";
     }
     else {
         cout << "[HillClimbing] No se encontro camino.\n";
@@ -337,9 +366,11 @@ void reshape(int w, int h) {
 void resetGrid() {
     for (int i = 0; i < GRID_SIZE; i++) {
         for (int j = 0; j < GRID_SIZE; j++) {
+            grid[i][j].isExplored = false;
             grid[i][j].isStart = false;
             grid[i][j].isEnd = false;
             grid[i][j].isPath = false;
+
         }
     }
     startSelected = false;
@@ -351,7 +382,7 @@ void keyboard(unsigned char key, int x, int y) {
 
     switch (key) {
     case '1': // BFS
-        clearPathOnly();          
+        clearPathOnly();
         bfsPath();
         grid[startNode.first][startNode.second].isStart = true;
         grid[endNode.first][endNode.second].isEnd = true;
