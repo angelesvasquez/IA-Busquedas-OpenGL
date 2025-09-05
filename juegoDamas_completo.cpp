@@ -5,7 +5,6 @@
 #include <cmath>
 using namespace std;
 
-// Profundidad definida por defecto
 int DEPTH = 4;
 
 class Piece {
@@ -155,16 +154,13 @@ vector<Move> getValidMoves(const Board& b, int color) {
 }
 
 void applyMove(Board& b, const Move& move) {
-    // Mover la pieza
     b.grid[move.toRow][move.toCol] = b.grid[move.fromRow][move.fromCol];
     b.grid[move.fromRow][move.fromCol].clear();
 
-    // Si fue captura, eliminar pieza capturada
     if (move.isCapture) {
         b.grid[move.capturedRow][move.capturedCol].clear();
     }
 
-    // Coronar si llega al final
     if (move.toRow == 0 && b.grid[move.toRow][move.toCol].getColor() == 1) {
         b.grid[move.toRow][move.toCol].crown(); 
     }
@@ -178,12 +174,10 @@ int evaluateBoard(const Board& b) {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 8; c++) {
             if (!b.grid[r][c].isEmpty()) {
-                int pieceValue = b.grid[r][c].isQueenPiece() ? 3 : 1;
                 if (b.grid[r][c].getColor() == 1) {
-                    score += pieceValue; // IA
-                }
-                else {
-                    score -= pieceValue; // jugador
+                    score += 1; // Computadora
+                } else {
+                    score -= 1; // jugador
                 }
             }
         }
@@ -232,7 +226,6 @@ Node* buildTree(Board b, int depth, bool isMaximizing) {
     return root;
 }
 
-// Liberar memoria del árbol recursivamente
 void deleteTree(Node* node) {
     if (!node) return;
     for (Node* ch : node->children) {
@@ -245,12 +238,11 @@ Move getBestMove(Board& b) {
     vector<Move> moves = getValidMoves(b, 1);
     if (moves.empty()) return Move();
 
-    // Construir árbol físico y elegir mejor hijo del root
     Node* root = buildTree(b, DEPTH, true);
 
     Move bestMove = moves[0];
     int bestScore = -100000;
-    // Cada hijo del root corresponde a un movimiento del jugador IA
+
     for (Node* child : root->children) {
         if (child->value > bestScore) {
             bestScore = child->value;
@@ -258,7 +250,6 @@ Move getBestMove(Board& b) {
         }
     }
 
-    // liberar memoria
     deleteTree(root);
 
     return bestMove;
@@ -269,15 +260,14 @@ bool isGameOver() {
     vector<Move> aiMoves = getValidMoves(currentBoard, 1);
 
     if (playerMoves.empty()) {
-        gameMessage = "¡IA gana! No tienes movimientos";
+        gameMessage = "¡Perdiste! No tienes movimientos";
         return true;
     }
     if (aiMoves.empty()) {
-        gameMessage = "¡Ganaste! IA sin movimientos";
+        gameMessage = "¡Ganaste! Computadora sin movimientos";
         return true;
     }
 
-    // Verificar si quedan piezas
     int playerPieces = 0, aiPieces = 0;
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 8; c++) {
@@ -289,11 +279,11 @@ bool isGameOver() {
     }
 
     if (playerPieces == 0) {
-        gameMessage = "¡IA gana! Te quedaste sin piezas";
+        gameMessage = "¡Perdiste! Te quedaste sin piezas";
         return true;
     }
     if (aiPieces == 0) {
-        gameMessage = "¡Ganaste! IA sin piezas";
+        gameMessage = "¡Ganaste! Computadora sin piezas";
         return true;
     }
 
@@ -306,7 +296,7 @@ void aiMove() {
     Move bestMove = getBestMove(currentBoard);
     if (bestMove.fromRow != -1) {
         applyMove(currentBoard, bestMove);
-        cout << "IA mueve de (" << bestMove.fromRow << "," << bestMove.fromCol
+        cout << "Computadora mueve de (" << bestMove.fromRow << "," << bestMove.fromCol
             << ") a (" << bestMove.toRow << "," << bestMove.toCol << ")" << endl;
     }
 
@@ -343,10 +333,10 @@ void display() {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 8; c++) {
             if ((r + c) % 2 == 0) {
-                glColor3f(1.0f, 1.0f, 1.0f); // casillas claras
+                glColor3f(1.0f, 1.0f, 1.0f); 
             }
             else {
-                glColor3f(0.5f, 0.5f, 0.5f); // casillas oscuras
+                glColor3f(0.5f, 0.5f, 0.5f); 
             }
 
             float x = -1.0f + c * cellSize;
@@ -363,18 +353,13 @@ void display() {
 
     if (pieceSelected) {
         possibleMoves = getValidMoves(currentBoard, 0);
-        glColor3f(0.0f, 0.0f, 0.6f); // azul para movimientos válidos
+        glColor3f(0.0f, 0.0f, 0.6f); 
         for (const Move& move : possibleMoves) {
             if (move.fromRow == selRow && move.fromCol == selCol) {
-                float x = -1.0f + move.toCol * cellSize;
-                float y = -1.0f + move.toRow * cellSize;
+                float x = -1.0f + move.toCol * cellSize + cellSize / 2.0f;
+                float y = -1.0f + move.toRow * cellSize + cellSize / 2.0f;
 
-                glBegin(GL_LINE_LOOP);
-                glVertex2f(x + 0.02f, y + 0.02f);
-                glVertex2f(x + cellSize - 0.02f, y + 0.02f);
-                glVertex2f(x + cellSize - 0.02f, y + cellSize - 0.02f);
-                glVertex2f(x + 0.02f, y + cellSize - 0.02f);
-                glEnd();
+                drawCircle(x, y, cellSize / 3.0f);
             }
         }
     }
@@ -386,21 +371,21 @@ void display() {
                 float y = -1.0f + (r + 0.5f) * cellSize;
 
                 if (currentBoard.grid[r][c].getColor() == 0) {
-                    glColor3f(1.0f, 1.0f, 1.0f); // blancas
+                    glColor3f(1.0f, 1.0f, 1.0f); 
                 }
                 else {
-                    glColor3f(0.1f, 0.1f, 0.1f); // negras
+                    glColor3f(0.1f, 0.1f, 0.1f); 
                 }
 
                 drawCircle(x, y, cellSize / 2.5f);
 
                 if (currentBoard.grid[r][c].isQueenPiece()) {
-                    glColor3f(1.0f, 1.0f, 0.0f); // dorado
+                    glColor3f(1.0f, 1.0f, 0.0f); 
                     drawCircle(x, y, cellSize / 4.0f);
                 }
 
                 if (pieceSelected && selRow == r && selCol == c) {
-                    glColor3f(1.0f, 0.0f, 0.0f); // rojo
+                    glColor3f(1.0f, 0.0f, 0.0f); 
                     glLineWidth(3.0f);
 
                     glBegin(GL_LINE_LOOP);
@@ -419,7 +404,6 @@ void display() {
         }
     }
 
-    // Dibujar mensaje de estado
     glColor3f(0.0f, 0.0f, 0.0f);
     drawText(-0.9f, 0.9f, gameMessage);
 
@@ -483,7 +467,7 @@ void mouse(int button, int state, int x, int y) {
 
                 pieceSelected = false;
                 turn = 1; // turno de la IA
-                gameMessage = "Turno de IA - Negras";
+                gameMessage = "Turno de la Computadora - Negras";
 
                 gameOver = isGameOver();
                 if (!gameOver) {
@@ -510,7 +494,6 @@ void mouse(int button, int state, int x, int y) {
 
 void keyboard(unsigned char key, int x, int y) {
     if (key == 'r' || key == 'R') {
-        // Reiniciar juego
         currentBoard.initializeBoard();
         turn = 0;
         pieceSelected = false;
@@ -519,7 +502,7 @@ void keyboard(unsigned char key, int x, int y) {
         gameMessage = "Juego reiniciado - Tu turno";
         glutPostRedisplay();
     }
-    else if (key == 27) { // ESC
+    else if (key == 27) { 
         exit(0);
     }
 }
@@ -546,7 +529,7 @@ int main(int argc, char** argv) {
     }
     else if (opcion > 6 && opcion <= 10) {
         DEPTH = opcion;
-        cout << "¡Advertencia! Profundidad muy alta, la IA puede tardar mucho en responder." << endl;
+        cout << "¡Advertencia! Profundidad muy alta, la computadora puede tardar mucho en responder." << endl;
     }
     else {
         cout << "Opcion invalida. Usando dificultad normal (Profundidad = 3)." << endl;
