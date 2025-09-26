@@ -1,18 +1,19 @@
 #include <GL/glut.h>
 #include <iostream>
 #include <vector>
-#include <cmath>
 #include <cstdlib>
-#include <ctime>
 #include <string>
 #include <fstream> 
 #include <thread>
+#include <chrono>
 #include <algorithm>
 #include <random>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 
 using namespace std;
+using namespace std::chrono;
 
 std::random_device rd;
 std::mt19937 rn(rd());
@@ -45,10 +46,10 @@ public:
 		std::uniform_real_distribution<> dist(0, 100);
 		coords.resize(NroC);
 		for (int i = 0; i < NroC; i++) {
-			coords[i] = {dist(rn),dist(rn)};
+			coords[i] = { dist(rn),dist(rn) };
 		}
 	}
-
+	
 	vector<int> generarRuta() {
 		vector<int> rutaN;
 		for (int i = NroC - 1; i >= 1; i--) {
@@ -60,8 +61,8 @@ public:
 	double calcularDistRuta(vector<int> ruta) {
 		double total = 0;
 		total += euclidiana(coords[0], coords[ruta[0]]);
-		for (int i = 0; i < NroC-2; i++) {
-			total += euclidiana(coords[ruta[i]], coords[ruta[i+1]]);
+		for (int i = 0; i < NroC - 2; i++) {
+			total += euclidiana(coords[ruta[i]], coords[ruta[i + 1]]);
 		}
 		total += euclidiana(coords[ruta[NroC - 2]], coords[0]);
 		return total;
@@ -78,72 +79,68 @@ public:
 	}
 
 
-	void print() {
-		cout << left; 
-		cout << "----------------------------------------------------------\n";
+	void print(int NroC) {
+		cout << left;
+		int length = round(2.87 * NroC + 29);
+		string s(length, '-');
+
+		cout << s << "\n";
 		cout << setw(5) << "Ind"
-			<< setw(26) << "Ruta"
-			<< setw(15) << "Distancia"
-			<< setw(15) << "Aptitud" << endl;
-		cout << "---------------	-------------------------------------------\n";
+			<< setw(2.8 * NroC) << "Ruta"
+			<< setw(14) << "Distancia"
+			<< setw(14) << "Aptitud" << endl;
+		cout << s << "\n";
 
 		for (int i = 0; i < POBLACION; i++) {
 			string rutaStr = "[0 ";
 			for (int c : poblacion[i].ruta) {
 				rutaStr += to_string(c) + " ";
 			}
-			rutaStr += "0]";
+			rutaStr += "0] ";
 
-			cout << setw(5) << i+1
-				<< setw(26) << rutaStr
-				<< setw(15) << fixed << setprecision(2) << poblacion[i].distanciaTotal
-				<< setw(15) << fixed << setprecision(6) << poblacion[i].fi
+			cout << setw(5) << i + 1
+				<< setw(2.8 * NroC) << rutaStr
+				<< setw(14) << fixed << setprecision(2) << poblacion[i].distanciaTotal
+				<< setw(14) << fixed << setprecision(6) << poblacion[i].fi
 				<< endl;
 		}
-
-		cout << "----------------------------------------------------------\n";
+		cout << s << "\n";
 		cout << "Suma aptitudes:  " << suma << endl;
 		cout << "Promedio:        " << promedio << endl;
 		cout << "Mejor Aptitud:   " << mejor.fi << endl;
 		cout << "Mejor Distancia: " << mejor.distanciaTotal << endl;
-		cout << "----------------------------------------------------------\n";
+		cout << s << "\n\n";
 	}
-
-	void exportarcsv(const string& nameFile, int generacion) {
+	void exportarEvolucion(const string& nameFile, int generacion) {
 		bool fileNew = false;
-
 		ifstream test(nameFile);
 		if (!test.good()) fileNew = true;
 		test.close();
 
 		ofstream file;
-		file.open(nameFile, ios::app);
+		if (fileNew) {
+			file.open(nameFile, ios::out);
+			// Crear cabeceras si es archivo nuevo
+			file << "Generacion;Promedio;Mejor\n";
+		}
+		else {
+			file.open(nameFile, ios::app);
+		}
 
 		if (!file.is_open()) {
-			cerr << "No se pudo abrir el archivo CSV\n";
+			cerr << "No se pudo abrir el archivo de evolución\n";
 			return;
 		}
 
-		file << "\nGENERACION: " << generacion << "\n";
-		file << "Nro Individuo;Ruta;Distancia Total;fi\n";
-
-		for (int i = 0; i < POBLACION; i++) {
-			file << i + 1 << ";"
-				 << "[";
-			for (int c : poblacion[i].ruta) {
-				file << c << " ";
-			}
-			file<< "];"
-				<< poblacion[i].distanciaTotal << "\n"
-				<< poblacion[i].fi << "\n";
+		Individuo mejor = obtenerMejor();
+		double peor = poblacion[0].fi;
+		for (int i = 1; i < POBLACION; i++) {
+			if (poblacion[i].fi > peor) peor = poblacion[i].fi;
 		}
-		file << "SUMA;" << suma << "\n";
-		file << "PROMEDIO;" << promedio << "\n";
-		file << "MEJOR APTITUD;" << mejor.fi<< "\n";
-		file << "MEJOR DISTANCIA;" << mejor.distanciaTotal << "\n";
+
+		file << generacion << ";" << promedio << ";" << mejor.fi << "\n";
 		file.close();
 	}
-
 	template<class T>
 	void paralelizar(int numTH, T tarea) {
 		numTH = min(4, POBLACION);  // si es q la poblacion es menor q 4
@@ -174,11 +171,11 @@ public:
 
 	Individuo torneo(int nroInd) {
 		std::uniform_int_distribution<> dis(0, POBLACION - 1);
-		int idx = dis(rd);
+		int idx = dis(rn);
 		Individuo mejor = poblacion[idx];
 
 		for (int i = 0; i < nroInd - 1; i++) {
-			int icand = dis(rd);
+			int icand = dis(rn);
 			if (poblacion[icand].fi > mejor.fi) {
 				mejor = poblacion[icand];
 			}
@@ -189,7 +186,7 @@ public:
 	Individuo cruzamiento(Individuo& ind1, Individuo& ind2) {
 		Individuo h; h.ruta.resize(NroC - 1);
 		std::uniform_int_distribution<> dist(0, NroC - 2);
-		int c1 = dist(rd), c2 = dist(rd);
+		int c1 = dist(rn), c2 = dist(rn);
 		if (c2 < c1) swap(c1, c2);
 		vector<bool> usado(NroC, false);
 
@@ -198,7 +195,7 @@ public:
 			usado[h.ruta[i]] = 1;
 		}
 		int idx = 0;
-		for (int i = 0; i < NroC-1; i++) {
+		for (int i = 0; i < NroC - 1; i++) {
 			int val = ind2.ruta[i];
 			if (!usado[val]) {
 				while (idx >= c1 && idx <= c2) idx++;
@@ -215,17 +212,11 @@ public:
 		std::uniform_real_distribution<> disProb(0.0, 1.0);
 		std::uniform_int_distribution<> disIdx(0, NroC - 2);
 		for (int i = 0; i < POBLACION; i++) {
-			if (disProb(rn) < probInd) { 
+			if (disProb(rn) < probInd) {
 				for (int j = 0; j < NroC - 1; j++) {
 					if (disProb(rn) < probBit) {
 						int k = disIdx(rn);
 						swap(poblacion[i].ruta[j], poblacion[i].ruta[k]);
-
-						int k2 = disIdx(rn);
-						if (k2 != j) {
-							if (k2 < j) swap(j, k2);
-							reverse(poblacion[i].ruta.begin() + j, poblacion[i].ruta.begin() + k2 + 1);
-						}
 					}
 				}
 			}
@@ -239,25 +230,22 @@ public:
 		}
 		return mejor;
 	}
-	void twoOpt(vector<int>& ruta) {
-		bool mejorado = true;
-		while (mejorado) {
-			mejorado = false;
-			for (int i = 1; i < ruta.size() - 1; i++) {
-				for (int k = i + 1; k < ruta.size(); k++) {
-					int a = ruta[i - 1], b = ruta[i];
-					int c = ruta[k], d = ruta[(k + 1) % ruta.size()];
+	bool twoOptFirst(vector<int>& ruta, const vector<pair<int, int>>& coords) {
+		for (int i = 1; i < ruta.size() - 1; i++) {
+			for (int k = i + 1; k < ruta.size(); k++) {
+				int a = ruta[i - 1], b = ruta[i];
+				int c = ruta[k], d = ruta[(k + 1) % ruta.size()];
 
-					double antes = euclidiana(coords[a], coords[b]) + euclidiana(coords[c], coords[d]);
-					double despues = euclidiana(coords[a], coords[c]) + euclidiana(coords[b], coords[d]);
+				double antes = euclidiana(coords[a], coords[b]) + euclidiana(coords[c], coords[d]);
+				double despues = euclidiana(coords[a], coords[c]) + euclidiana(coords[b], coords[d]);
 
-					if (despues < antes) {
-						reverse(ruta.begin() + i, ruta.begin() + k + 1);
-						mejorado = true;
-					}
+				if (despues < antes) {
+					reverse(ruta.begin() + i, ruta.begin() + k + 1);
+					return true;  
 				}
 			}
 		}
+		return false;
 	}
 
 	void nuevaGeneracion() {
@@ -266,30 +254,34 @@ public:
 
 		paralelizar(4, [this, &nPoblacion](int j) {
 			nPoblacion[j] = torneo(3);
-		});
-
+			});
 		for (int i = 0; i < POBLACION; i += 2) {
 			Individuo h1 = cruzamiento(nPoblacion[i], nPoblacion[i + 1]);
-			Individuo h2 = cruzamiento(nPoblacion[i+1], nPoblacion[i]);
+			Individuo h2 = cruzamiento(nPoblacion[i + 1], nPoblacion[i]);
 			nPoblacion[i] = h1;
 			nPoblacion[i + 1] = h2;
 		}
 		poblacion = nPoblacion;
+
 		mutacion();
-
-		for (int i = 0; i < POBLACION; i++) {
-			twoOpt(poblacion[i].ruta);
+		
+		int eliteCount = max(1, POBLACION / 20); // 5%
+		for (int i = 0; i < eliteCount; i++) {
+			while (twoOptFirst(poblacion[i].ruta, coords));
 		}
-		evaluarFIThreads();
 
+		evaluarFIThreads();
 		int iPeor = 0;
 		for (int i = 1; i < POBLACION; i++) {
 			if (poblacion[i].fi < poblacion[iPeor].fi) iPeor = i;
 		}
-		poblacion[iPeor] = mejorAntes; 
+		poblacion[iPeor] = mejorAntes;
 
 		actualizarVar();
+	
 	}
+	
+
 	void actualizarVar() {
 		suma = promedio = 0;
 		for (int i = 0; i < POBLACION; i++) {
@@ -337,7 +329,7 @@ void drawCircle(float x, float y, float radius, int segments = 20) {
 }
 
 void drawAllEdges() {
-	glLineWidth(1.0f);                  
+	glLineWidth(1.0f);
 	glColor3f(0.8f, 0.8f, 0.8f); // gris claro
 
 	glBegin(GL_LINES);
@@ -365,7 +357,7 @@ void display() {
 	}
 	glEnd();
 
-	float cityRadius = 1.0f; 
+	float cityRadius = 1.0f;
 	for (int i = 0; i < gAgente->coords.size(); i++) {
 		auto& c = gAgente->coords[i];
 		if (i == 0) glColor3f(0.0f, 1.0f, 0.0f); // ciudad inicio verde
@@ -373,13 +365,12 @@ void display() {
 		drawCircle(static_cast<float>(c.first), static_cast<float>(c.second), cityRadius);
 	}
 
-	// Mostrar pesos de cada arista
 	for (int i = 0; i < gRuta.size() - 1; i++) {
 		auto& c1 = gAgente->coords[gRuta[i]];
 		auto& c2 = gAgente->coords[gRuta[i + 1]];
-		double dist = euclidiana(c1, c2); 
+		double dist = euclidiana(c1, c2);
 		std::ostringstream ss;
-		ss << std::fixed << std::setprecision(1) << dist;
+		ss << std::fixed << std::setprecision(2) << dist;
 
 		float xm = (c1.first + c2.first) / 2.0f;
 		float ym = (c1.second + c2.second) / 2.0f;
@@ -390,32 +381,33 @@ void display() {
 	glutSwapBuffers();
 }
 
+
 int main(int argc, char** argv)
 {
-	int nroGen = 100;
-	AgenteViajero ag(10, 10); // Nro Poblacion, Nro Ciudades
+	int NroGen = 100, NroC = 40, nroPob = 10;
+	AgenteViajero ag(nroPob, NroC); // Nro Poblacion, Nro Ciudades
 
 	ag.generarCiudades();
 	ag.generarPoblacion();
 
-	for (int i = 1; i < nroGen; i++) {
+	for (int i = 1; i <= NroGen; i++) {
 		ag.nuevaGeneracion();
-		ag.print();	
+		cout << "Generacion: " << i<<endl;
+		ag.print(NroC);
+		ag.exportarEvolucion("evolucion.csv", i);
 	}
-	ag.printMatrix();
 
-	gAgente = &ag; 
+	gAgente = &ag;
 	gRuta = ag.mejor.ruta;
-	gRuta.insert(gRuta.begin(), 0);  
-	gRuta.push_back(0);              
+	gRuta.insert(gRuta.begin(), 0);
+	gRuta.push_back(0);
 
 	glutInit(&argc, argv);
 	glutInitWindowSize(800, 600);
 	glutCreateWindow("Agente Viajero");
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluOrtho2D(0, 100, 0, 100); 
+	gluOrtho2D(0, 100, 0, 100);
 	glutDisplayFunc(display);
 	glutMainLoop();
 }
-
